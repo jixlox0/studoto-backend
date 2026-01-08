@@ -1,0 +1,18 @@
+{
+  "user_not_found": "Utilisateur introuvable",
+  "user_already_exists": "L'utilisateur existe déjà",
+  "invalid_credentials": "Identifiants invalides",
+  "invalid_token": "Token invalide ou expiré",
+  "unauthorized": "Non autorisé",
+  "bad_request": "Requête incorrecte",
+  "internal_error": "Erreur interne du serveur",
+  "validation_error": "Erreur de validation",
+  "x_auth_key_required": "L'en-tête X-Auth-Key est requis",
+  "x_auth_key_empty": "L'en-tête X-Auth-Key ne peut pas être vide",
+  "user_not_authenticated": "Utilisateur non authentifié",
+  "invalid_user_id_type": "Type d'ID utilisateur invalide",
+  "invalid_provider": "Fournisseur invalide",
+  "code_required": "Code requis",
+  "unsupported_oauth_provider": "Fournisseur OAuth non pris en charge"
+}
+
