@@ -29,8 +29,8 @@ func NewRouter(handlers *Handlers, cfg *config.Config) *gin.Engine {
 	// Auth routes
 	auth := router.Group("/auth")
 	{
-		auth.POST("/register", handlers.Register)
-		auth.POST("/login", handlers.Login)
+		auth.POST("/signup", handlers.Signup)
+		auth.POST("/signin", handlers.Signin)
 		auth.GET("/oauth/:provider", handlers.GetOAuthURL)
 		auth.GET("/callback/:provider", handlers.OAuthCallback)
 	}
@@ -39,9 +39,8 @@ func NewRouter(handlers *Handlers, cfg *config.Config) *gin.Engine {
 	protected := router.Group("/api")
 	protected.Use(handlers.authMiddleware.RequireAuth())
 	{
-		protected.GET("/profile", handlers.GetProfile)
+		protected.GET("/account/profile", handlers.GetProfile)
 	}
 
 	return router
 }
-

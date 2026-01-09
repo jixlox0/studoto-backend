@@ -18,8 +18,8 @@ COPY . .
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
 
-# Final stage
-FROM alpine:latest
+# Final stage - studoto-api target
+FROM alpine:latest AS studoto-api
 
 RUN apk --no-cache add ca-certificates
 

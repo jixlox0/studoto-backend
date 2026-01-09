@@ -1,10 +1,11 @@
 package service
 
 import (
-	"errors"
+	"context"
 	"math/rand"
 	"time"
 
+	"github.com/jixlox0/studoto-backend/internal/errors"
 	"github.com/jixlox0/studoto-backend/internal/models"
 	"github.com/jixlox0/studoto-backend/internal/repository"
 	"github.com/jixlox0/studoto-backend/pkg/auth"
@@ -14,9 +15,9 @@ import (
 )
 
 type AuthService interface {
-	Register(req *models.CreateUserRequest) (*models.AuthResponse, error)
-	Login(req *models.LoginRequest) (*models.AuthResponse, error)
-	OAuthLogin(provider, code string) (*models.AuthResponse, error)
+	Signup(req *models.CreateUserRequest) (*models.SuccessResponse, error)
+	Signin(req *models.LoginRequest) (*models.SuccessResponse, error)
+	OAuthLogin(provider, code string) (*models.SuccessResponse, error)
 	GetOAuthURL(provider string) (string, error)
 }
 
@@ -34,11 +35,11 @@ func NewAuthService(userRepo repository.UserRepository, jwtAuth *auth.JWTAuth, o
 	}
 }
 
-func (s *authService) Register(req *models.CreateUserRequest) (*models.AuthResponse, error) {
+func (s *authService) Signup(req *models.CreateUserRequest) (*models.SuccessResponse, error) {
 	// Check if user already exists
 	existingUser, _ := s.userRepo.FindByEmail(req.Email)
 	if existingUser != nil {
-		return nil, errors.New("user already exists")
+		return nil, errors.ErrUserAlreadyExists
 	}
 
 	// Hash password
@@ -60,38 +61,38 @@ func (s *authService) Register(req *models.CreateUserRequest) (*models.AuthRespo
 	}
 
 	// Generate token
-	token, err := s.jwtAuth.GenerateToken(user.ID, user.Email)
+	token, err := s.jwtAuth.GenerateToken(context.Background(), user.ID, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.AuthResponse{
-		Token: token,
-		User:  user,
-	}, nil
+	response := map[string]any{
+		"token": token,
+		"user":  user,
+	}
+	return models.NewSuccessResponse(response), nil
 }
 
-func (s *authService) Login(req *models.LoginRequest) (*models.AuthResponse, error) {
+func (s *authService) Signin(req *models.LoginRequest) (*models.SuccessResponse, error) {
 	user, err := s.userRepo.FindByEmail(req.Email)
 	if err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.ErrUserNotFound
 	}
 
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, errors.New("invalid credentials")
+		return nil, errors.ErrInvalidPassword
 	}
 
 	// Generate token
-	token, err := s.jwtAuth.GenerateToken(user.ID, user.Email)
+	token, err := s.jwtAuth.GenerateToken(context.Background(), user.ID, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.AuthResponse{
-		Token: token,
-		User:  user,
-	}, nil
+	return models.NewSuccessResponse(map[string]any{
+		"token": token,
+	}), nil
 }
 
 func (s *authService) GetOAuthURL(provider string) (string, error) {
@@ -103,11 +104,11 @@ func (s *authService) GetOAuthURL(provider string) (string, error) {
 	case "github":
 		return s.oauthService.GetGitHubAuthURL(state), nil
 	default:
-		return "", errors.New("unsupported OAuth provider")
+		return "", errors.ErrInvalidProvider
 	}
 }
 
-func (s *authService) OAuthLogin(provider, code string) (*models.AuthResponse, error) {
+func (s *authService) OAuthLogin(provider, code string) (*models.SuccessResponse, error) {
 	var oauthUser *oauth.OAuthUser
 	var err error
 
@@ -117,7 +118,7 @@ func (s *authService) OAuthLogin(provider, code string) (*models.AuthResponse, e
 	case "github":
 		oauthUser, err = s.oauthService.ExchangeGitHubCode(code)
 	default:
-		return nil, errors.New("unsupported OAuth provider")
+		return nil, errors.ErrInvalidProvider
 	}
 
 	if err != nil {
@@ -150,15 +151,14 @@ func (s *authService) OAuthLogin(provider, code string) (*models.AuthResponse, e
 	}
 
 	// Generate token
-	token, err := s.jwtAuth.GenerateToken(user.ID, user.Email)
+	token, err := s.jwtAuth.GenerateToken(context.Background(), user.ID, user.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	return &models.AuthResponse{
-		Token: token,
-		User:  user,
-	}, nil
+	return models.NewSuccessResponse(map[string]any{
+		"token": token,
+	}), nil
 }
 
 func generateState() string {

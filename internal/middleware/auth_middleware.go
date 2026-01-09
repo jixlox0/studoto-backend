@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jixlox0/studoto-backend/internal/errors"
 	"github.com/jixlox0/studoto-backend/pkg/auth"
-	"github.com/jixlox0/studoto-backend/pkg/i18n"
 )
 
 type AuthMiddleware struct {
@@ -19,13 +19,19 @@ func NewAuthMiddleware(jwtAuth *auth.JWTAuth) *AuthMiddleware {
 
 func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		lang := i18n.GetLanguageFromRequest(c)
-
-		// Check for custom X-Auth-Key header
+		// Check for authentication token in headers
+		// Support both X-Auth-Key and x-auth-token headers
 		authKey := c.GetHeader("X-Auth-Key")
 		if authKey == "" {
+			authKey = c.GetHeader("x-auth-token")
+		}
+		if authKey == "" {
+			authKey = c.GetHeader("X-Auth-Token")
+		}
+		
+		if authKey == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": i18n.T(lang, "x_auth_key_required"),
+				"error": errors.ErrXAuthKeyRequired.Error(),
 			})
 			c.Abort()
 			return
@@ -35,17 +41,17 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		token := strings.TrimSpace(authKey)
 		if token == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": i18n.T(lang, "x_auth_key_empty"),
+				"error": errors.ErrXAuthKeyEmpty.Error(),
 			})
 			c.Abort()
 			return
 		}
 
 		// Validate the token
-		claims, err := m.jwtAuth.ValidateToken(token)
+		claims, err := m.jwtAuth.ValidateToken(c.Request.Context(), token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": i18n.T(lang, "invalid_token"),
+				"error": errors.ErrInvalidToken.Error(),
 			})
 			c.Abort()
 			return

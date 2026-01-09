@@ -19,7 +19,7 @@ func Generate(prefix string) string {
 	}
 
 	// Return prefixed UUID: PREFIX-UUID
-	return fmt.Sprintf("%s-%s", strings.ToUpper(prefix), id)
+	return fmt.Sprintf("%s-%s", strings.ToLower(prefix), id)
 }
 
 // GenerateShort generates a short UUID with prefix (first 8 chars)
@@ -31,7 +31,7 @@ func GenerateShort(prefix string) string {
 		return id[:8]
 	}
 
-	return fmt.Sprintf("%s-%s", strings.ToUpper(prefix), id[:8])
+	return fmt.Sprintf("%s-%s", strings.ToLower(prefix), id[:8])
 }
 
 // GenerateWithSeparator generates UUID with custom prefix and separator
@@ -47,7 +47,7 @@ func GenerateWithSeparator(prefix, separator string) string {
 		return id
 	}
 
-	return fmt.Sprintf("%s%s%s", strings.ToUpper(prefix), separator, id)
+	return fmt.Sprintf("%s%s%s", strings.ToLower(prefix), separator, id)
 }
 
 // Validate validates if a string is a valid prefixed UUID
@@ -56,7 +56,7 @@ func Validate(id, prefix string) bool {
 		return uuid.Validate(id) == nil
 	}
 
-	expectedPrefix := strings.ToUpper(prefix) + "-"
+	expectedPrefix := strings.ToLower(prefix) + "-"
 	if !strings.HasPrefix(id, expectedPrefix) {
 		return false
 	}
@@ -71,7 +71,7 @@ func ExtractUUID(prefixedID, prefix string) (string, error) {
 		return prefixedID, nil
 	}
 
-	expectedPrefix := strings.ToUpper(prefix) + "-"
+	expectedPrefix := strings.ToLower(prefix) + "-"
 	if !strings.HasPrefix(prefixedID, expectedPrefix) {
 		return "", fmt.Errorf("invalid prefix: expected %s", expectedPrefix)
 	}

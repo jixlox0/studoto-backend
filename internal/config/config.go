@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Database DatabaseConfig
+	Redis    RedisConfig
 	JWT      JWTConfig
 	OAuth    OAuthConfig
 	Server   ServerConfig
@@ -43,10 +44,16 @@ type GitHubOAuthConfig struct {
 	ClientSecret string
 }
 
+type RedisConfig struct {
+	Host     string
+	Port     string
+	Password string
+	DB       int
+}
+
 type ServerConfig struct {
-	Port        string
-	DefaultLang string
-	CORS        CORSConfig
+	Port string
+	CORS CORSConfig
 }
 
 type CORSConfig struct {
@@ -58,11 +65,6 @@ type CORSConfig struct {
 	MaxAge           int
 }
 
-type I18nConfig struct {
-	DefaultLanguage string
-	Enabled         bool
-}
-
 func Load() (*Config, error) {
 	expirationHours, _ := strconv.Atoi(getEnv("JWT_EXPIRATION_HOURS", "24"))
 
@@ -72,8 +74,14 @@ func Load() (*Config, error) {
 			Port:     getEnv("DB_PORT", "5432"),
 			User:     getEnv("DB_USER", "postgres"),
 			Password: getEnv("DB_PASSWORD", "postgres"),
-			DBName:   getEnv("DB_NAME", "backend_db"),
+			DBName:   getEnv("DB_NAME", "studoto"),
 			SSLMode:  getEnv("DB_SSLMODE", "disable"),
+		},
+		Redis: RedisConfig{
+			Host:     getEnv("REDIS_HOST", "localhost"),
+			Port:     getEnv("REDIS_PORT", "6379"),
+			Password: getEnv("REDIS_PASSWORD", ""),
+			DB:       parseInt(getEnv("REDIS_DB", "0"), 0),
 		},
 		JWT: JWTConfig{
 			SecretKey:       getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
@@ -91,12 +99,11 @@ func Load() (*Config, error) {
 			RedirectURL: getEnv("OAUTH_REDIRECT_URL", "http://localhost:8080/auth/callback"),
 		},
 		Server: ServerConfig{
-			Port:        getEnv("PORT", "8080"),
-			DefaultLang: getEnv("DEFAULT_LANG", "en"),
+			Port: getEnv("PORT", "8080"),
 			CORS: CORSConfig{
 				AllowedOrigins:   parseStringSlice(getEnv("CORS_ALLOWED_ORIGINS", "*")),
 				AllowedMethods:   parseStringSlice(getEnv("CORS_ALLOWED_METHODS", "GET,POST,PUT,PATCH,DELETE,OPTIONS")),
-				AllowedHeaders:   parseStringSlice(getEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization,X-Auth-Key")),
+				AllowedHeaders:   parseStringSlice(getEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization,X-Auth-Key,x-auth-token,X-Auth-Token")),
 				ExposedHeaders:   parseStringSlice(getEnv("CORS_EXPOSED_HEADERS", "Content-Length")),
 				AllowCredentials: getEnv("CORS_ALLOW_CREDENTIALS", "true") == "true",
 				MaxAge:           parseInt(getEnv("CORS_MAX_AGE", "86400"), 86400),
