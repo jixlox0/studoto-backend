@@ -7,7 +7,7 @@ import (
 )
 
 type UserService interface {
-	GetUserByID(id uint) (*models.User, error)
+	GetUserByID(id uint) (*models.UserResponse, error)
 	GetUserByEmail(email string) (*models.User, error)
 }
 
@@ -23,7 +23,7 @@ func NewUserService(userRepo repository.UserRepository, jwtAuth *auth.JWTAuth) U
 	}
 }
 
-func (s *userService) GetUserByID(id uint) (*models.User, error) {
+func (s *userService) GetUserByID(id uint) (*models.UserResponse, error) {
 	return s.userRepo.FindByID(id)
 }
 

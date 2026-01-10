@@ -28,15 +28,13 @@ func NewHandlers(userService service.UserService, authService service.AuthServic
 func (h *Handlers) Signup(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
 	response, err := h.authService.Signup(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
@@ -46,15 +44,13 @@ func (h *Handlers) Signup(c *gin.Context) {
 func (h *Handlers) Signin(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
 	response, err := h.authService.Signin(&req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, models.NewErrorsResponse(http.StatusUnauthorized, err.Error()))
 		return
 	}
 
@@ -64,17 +60,17 @@ func (h *Handlers) Signin(c *gin.Context) {
 func (h *Handlers) GetOAuthURL(c *gin.Context) {
 	provider := c.Param("provider")
 	if provider != "google" && provider != "github" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrInvalidProvider.Error()})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, errors.ErrInvalidProvider.Error()))
 		return
 	}
 
 	url, err := h.authService.GetOAuthURL(provider)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"url": url})
+	c.JSON(http.StatusOK, models.NewSuccessResponse(map[string]any{"url": url}))
 }
 
 func (h *Handlers) OAuthCallback(c *gin.Context) {
@@ -83,7 +79,8 @@ func (h *Handlers) OAuthCallback(c *gin.Context) {
 	state := c.Query("state")
 
 	if code == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errors.ErrCodeRequired.Error()})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, errors.ErrCodeRequired.Error()))
+
 		return
 	}
 
@@ -92,20 +89,18 @@ func (h *Handlers) OAuthCallback(c *gin.Context) {
 
 	response, err := h.authService.OAuthLogin(provider, code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, models.NewErrorsResponse(http.StatusBadRequest, err.Error()))
 		return
 	}
 
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, models.NewSuccessResponse(response))
 }
 
 // User handlers
 func (h *Handlers) GetProfile(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": errors.ErrNotAuthenticated.Error(),
-		})
+		c.JSON(http.StatusUnauthorized, models.NewErrorsResponse(http.StatusUnauthorized, errors.ErrNotAuthenticated.Error()))
 		return
 	}
 
@@ -116,17 +111,13 @@ func (h *Handlers) GetProfile(c *gin.Context) {
 	case int:
 		userIDUint = uint(v)
 	default:
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": errors.ErrInvalidUserIDType.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, models.NewErrorsResponse(http.StatusInternalServerError, errors.ErrInvalidUserIDType.Error()))
 		return
 	}
 
 	user, err := h.userService.GetUserByID(userIDUint)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": errors.ErrUserNotFound.Error(),
-		})
+		c.JSON(http.StatusNotFound, models.NewErrorsResponse(http.StatusNotFound, errors.ErrUserNotFound.Error()))
 		return
 	}
 
@@ -134,5 +125,5 @@ func (h *Handlers) GetProfile(c *gin.Context) {
 }
 
 func (h *Handlers) HealthCheck(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	c.JSON(http.StatusOK, models.NewSuccessResponse(map[string]any{"code": http.StatusOK, "status": "ok", "message": "Server is running"}))
 }
